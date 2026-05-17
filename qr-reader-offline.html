@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>QR Reader</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    background: #111;
+    color: #f0f0f0;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    gap: 0;
+    overflow: hidden;
+  }
+
+  .card {
+    width: 100%;
+    max-width: 380px;
+    background: #1c1c1c;
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.5);
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Top bar */
+  .topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px 14px;
+    border-bottom: 1px solid #272727;
+  }
+  .topbar h1 {
+    font-size: 17px;
+    font-weight: 600;
+    letter-spacing: -0.3px;
+  }
+  .badge {
+    font-size: 10px;
+    font-weight: 600;
+    color: #7cfc00;
+    background: rgba(124,252,0,0.12);
+    border: 1px solid rgba(124,252,0,0.3);
+    padding: 3px 8px;
+    border-radius: 20px;
+    letter-spacing: 0.5px;
+  }
+
+  /* Preview area */
+  .preview-area {
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    background: #141414;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+
+  .placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    pointer-events: none;
+  }
+  .qr-icon {
+    width: 64px;
+    height: 64px;
+    opacity: 0.18;
+  }
+  .placeholder p {
+    font-size: 13px;
+    color: #555;
+    letter-spacing: 0.2px;
+  }
+
+  #previewImg {
+    display: none;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
+  #previewImg.visible { display: block; }
+
+  /* Scan animation overlay */
+  .scan-overlay {
+    display: none;
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+  }
+  .scan-overlay.active { display: block; }
+  .scan-line {
+    position: absolute;
+    left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, #7cfc00, transparent);
+    box-shadow: 0 0 10px #7cfc00;
+    animation: scan 1s ease-in-out infinite alternate;
+  }
+  @keyframes scan { from { top: 5%; } to { top: 95%; } }
+
+  /* Corner brackets */
+  .corner { position: absolute; width: 28px; height: 28px; }
+  .corner.tl { top: 12px; left: 12px; border-top: 2px solid #7cfc00; border-left: 2px solid #7cfc00; border-radius: 4px 0 0 0; }
+  .corner.tr { top: 12px; right: 12px; border-top: 2px solid #7cfc00; border-right: 2px solid #7cfc00; border-radius: 0 4px 0 0; }
+  .corner.bl { bottom: 12px; left: 12px; border-bottom: 2px solid #7cfc00; border-left: 2px solid #7cfc00; border-radius: 0 0 0 4px; }
+  .corner.br { bottom: 12px; right: 12px; border-bottom: 2px solid #7cfc00; border-right: 2px solid #7cfc00; border-radius: 0 0 4px 0; }
+
+  /* Result */
+  .result-area {
+    padding: 14px 20px;
+    min-height: 68px;
+    display: flex;
+    align-items: center;
+    border-top: 1px solid #272727;
+  }
+  .result-placeholder {
+    font-size: 13px;
+    color: #444;
+  }
+  .result-content { display: none; width: 100%; }
+  .result-content.visible { display: flex; flex-direction: column; gap: 10px; }
+
+  .result-url {
+    font-size: 13px;
+    color: #eee;
+    word-break: break-all;
+    line-height: 1.5;
+    max-height: 60px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+  }
+  .result-url.error { color: #ff6b6b; }
+
+  .result-actions {
+    display: flex;
+    gap: 8px;
+  }
+  .btn {
+    flex: 1;
+    padding: 10px;
+    border: none;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.15s, transform 0.1s;
+    letter-spacing: 0.2px;
+  }
+  .btn:active { transform: scale(0.96); opacity: 0.8; }
+  .btn-open {
+    background: #7cfc00;
+    color: #000;
+  }
+  .btn-copy {
+    background: #2a2a2a;
+    color: #eee;
+    border: 1px solid #333;
+  }
+
+  /* Upload button */
+  .upload-wrap {
+    padding: 14px 20px 18px;
+    border-top: 1px solid #272727;
+  }
+  .btn-upload {
+    width: 100%;
+    padding: 13px;
+    background: #232323;
+    border: 1.5px dashed #333;
+    border-radius: 12px;
+    color: #bbb;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: border-color 0.2s, color 0.2s;
+  }
+  .btn-upload:active { border-color: #7cfc00; color: #7cfc00; }
+
+  #fileInput { display: none; }
+  canvas { display: none; }
+
+  /* Toast */
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(80px);
+    background: #7cfc00;
+    color: #000;
+    font-size: 13px;
+    font-weight: 700;
+    padding: 10px 22px;
+    border-radius: 30px;
+    letter-spacing: 0.3px;
+    transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1);
+    pointer-events: none;
+    z-index: 99;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+
+<div class="card">
+  <div class="topbar">
+    <h1>QR Reader</h1>
+    <span class="badge">OFFLINE</span>
+  </div>
+
+  <div class="preview-area">
+    <div class="placeholder" id="placeholder">
+      <!-- QR SVG icon -->
+      <svg class="qr-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
+        <rect x="3" y="14" width="7" height="7" rx="1"/>
+        <rect x="5" y="5" width="3" height="3" fill="currentColor" stroke="none"/>
+        <rect x="16" y="5" width="3" height="3" fill="currentColor" stroke="none"/>
+        <rect x="5" y="16" width="3" height="3" fill="currentColor" stroke="none"/>
+        <line x1="14" y1="14" x2="14" y2="14.01" stroke-width="2.5" stroke-linecap="round"/>
+        <line x1="18" y1="14" x2="21" y2="14"/>
+        <line x1="14" y1="18" x2="14" y2="21"/>
+        <line x1="18" y1="18" x2="21" y2="21"/>
+        <line x1="21" y1="18" x2="18" y2="21"/>
+      </svg>
+      <p>Belum ada gambar</p>
+    </div>
+    <img id="previewImg" alt="QR preview">
+    <div class="scan-overlay" id="scanOverlay">
+      <div class="scan-line"></div>
+      <div class="corner tl"></div>
+      <div class="corner tr"></div>
+      <div class="corner bl"></div>
+      <div class="corner br"></div>
+    </div>
+  </div>
+
+  <div class="result-area">
+    <span class="result-placeholder" id="resultPlaceholder">Hasil scan muncul di sini</span>
+    <div class="result-content" id="resultContent">
+      <div class="result-url" id="resultUrl"></div>
+      <div class="result-actions" id="resultActions"></div>
+    </div>
+  </div>
+
+  <div class="upload-wrap">
+    <label class="btn-upload" for="fileInput">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+        <polyline points="17 8 12 3 7 8"/>
+        <line x1="12" y1="3" x2="12" y2="15"/>
+      </svg>
+      Pilih Gambar QR
+    </label>
+    <input type="file" id="fileInput" accept="image/*">
+  </div>
+</div>
+
+<div class="toast" id="toast">Link disalin!</div>
+<canvas id="canvas"></canvas>
+
+<script>
+// ─── State ───────────────────────────────────────────
+const fileInput     = document.getElementById('fileInput');
+const previewImg    = document.getElementById('previewImg');
+const placeholder   = document.getElementById('placeholder');
+const scanOverlay   = document.getElementById('scanOverlay');
+const resultContent = document.getElementById('resultContent');
+const resultPlaceholder = document.getElementById('resultPlaceholder');
+const resultUrl     = document.getElementById('resultUrl');
+const resultActions = document.getElementById('resultActions');
+const canvas        = document.getElementById('canvas');
+const ctx           = canvas.getContext('2d');
+const toast         = document.getElementById('toast');
+
+// ─── File pick ───────────────────────────────────────
+fileInput.addEventListener('change', () => {
+  if (fileInput.files[0]) readFile(fileInput.files[0]);
+});
+
+function readFile(file) {
+  const reader = new FileReader();
+  reader.onload = e => loadImage(e.target.result);
+  reader.readAsDataURL(file);
+}
+
+function loadImage(src) {
+  // Reset UI
+  resultContent.classList.remove('visible');
+  resultPlaceholder.style.display = 'block';
+  resultPlaceholder.textContent = 'Sedang scan...';
+  scanOverlay.classList.add('active');
+  placeholder.style.display = 'none';
+  previewImg.classList.add('visible');
+  previewImg.src = src;
+
+  const img = new Image();
+  img.onload = () => {
+    canvas.width  = img.width;
+    canvas.height = img.height;
+    ctx.drawImage(img, 0, 0);
+    decodeQR(img);
+  };
+  img.src = src;
+}
+
+// ─── Decode — BarcodeDetector (built-in modern browser) ──
+async function decodeQR(imgEl) {
+  let result = null;
+
+  // Method 1: BarcodeDetector API (Chrome 83+, Edge 83+, Safari 17.4+, Android WebView)
+  if ('BarcodeDetector' in window) {
+    try {
+      const detector = new BarcodeDetector({ formats: ['qr_code'] });
+      const codes = await detector.detect(imgEl);
+      if (codes.length > 0) result = codes[0].rawValue;
+    } catch (e) { /* fallthrough */ }
+  }
+
+  // Method 2: fallback — try BarcodeDetector without format filter (wider compat)
+  if (!result && 'BarcodeDetector' in window) {
+    try {
+      const detector = new BarcodeDetector();
+      const codes = await detector.detect(imgEl);
+      if (codes.length > 0) result = codes[0].rawValue;
+    } catch (e) { /* fallthrough */ }
+  }
+
+  setTimeout(() => {
+    scanOverlay.classList.remove('active');
+    showResult(result);
+  }, 700);
+}
+
+// ─── Show result ─────────────────────────────────────
+function showResult(text) {
+  resultPlaceholder.style.display = 'none';
+  resultActions.innerHTML = '';
+
+  if (text) {
+    resultUrl.textContent = text;
+    resultUrl.className = 'result-url';
+    resultContent.classList.add('visible');
+
+    const isURL = /^https?:\/\//i.test(text.trim());
+
+    if (isURL) {
+      const btnOpen = document.createElement('button');
+      btnOpen.className = 'btn btn-open';
+      btnOpen.textContent = 'Buka Link';
+      btnOpen.onclick = () => window.open(text.trim(), '_blank', 'noopener');
+      resultActions.appendChild(btnOpen);
+    }
+
+    const btnCopy = document.createElement('button');
+    btnCopy.className = 'btn btn-copy';
+    btnCopy.textContent = 'Salin';
+    btnCopy.onclick = () => {
+      navigator.clipboard.writeText(text).then(showToast).catch(() => {
+        // Fallback for older browsers
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        showToast();
+      });
+    };
+    resultActions.appendChild(btnCopy);
+
+  } else {
+    // BarcodeDetector not supported or not found
+    const supported = 'BarcodeDetector' in window;
+    resultUrl.className = 'result-url error';
+    resultUrl.textContent = supported
+      ? 'QR code tidak ditemukan. Coba gambar yang lebih jelas.'
+      : 'Browser ini belum mendukung scan offline.\nCoba Chrome atau Edge terbaru.';
+    resultContent.classList.add('visible');
+    resultPlaceholder.style.display = 'none';
+  }
+}
+
+// ─── Toast ───────────────────────────────────────────
+function showToast() {
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 1800);
+}
+</script>
+</body>
+</html>
