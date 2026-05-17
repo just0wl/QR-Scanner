@@ -3,13 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>QR Reader</title>
+<title>QR-Scanner</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#111111">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
-<meta name="apple-mobile-web-app-title" content="QR Reader">
+<meta name="apple-mobile-web-app-title" content="QR-Scanner">
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 
@@ -181,7 +181,7 @@
 
 <div class="card">
   <div class="topbar">
-    <h1>QR Reader</h1>
+    <h1>QR-Scanner</h1>
     <span class="badge">OFFLINE</span>
   </div>
 
@@ -277,13 +277,20 @@ function readFile(file) {
   const reader = new FileReader();
   reader.onload = e => loadImage(e.target.result);
   reader.readAsDataURL(file);
+  // Reset input supaya file yang sama bisa dipilih lagi
+  fileInput.value = '';
 }
 
 function loadImage(src) {
   resetResult('Sedang scan...');
   placeholder.style.display = 'none';
-  previewImg.classList.add('visible');
-  previewImg.src = src;
+  // Reset preview dulu sebelum isi baru
+  previewImg.classList.remove('visible');
+  previewImg.src = '';
+  requestAnimationFrame(() => {
+    previewImg.src = src;
+    previewImg.classList.add('visible');
+  });
   scanOverlay.classList.add('active');
 
   const img = new Image();
