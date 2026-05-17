@@ -1,7 +1,7 @@
 {
-  "name": "QR Reader",
-  "short_name": "QR Reader",
-  "description": "Scan QR code dari gambar, full offline",
+  "name": "QR Scanner",
+  "short_name": "QR Scanner",
+  "description": "Scan QR",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#111111",
