@@ -3,13 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>QR Scanner</title>
+<title>QR Reader</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#111111">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
-<meta name="apple-mobile-web-app-title" content="QR Scanner">
+<meta name="apple-mobile-web-app-title" content="QR Reader">
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 
@@ -181,8 +181,8 @@
 
 <div class="card">
   <div class="topbar">
-    <h1>QR Scanner</h1>
-    <span class="badge">privacy</span>
+    <h1>QR Reader</h1>
+    <span class="badge">OFFLINE</span>
   </div>
 
   <div class="preview-area">
@@ -274,9 +274,9 @@ fileInput.addEventListener('change', () => {
 
 function readFile(file) {
   stopCamera();
-  const Scanner = new FileScanner();
-  Scanner.onload = e => loadImage(e.target.result);
-  Scanner.readAsDataURL(file);
+  const reader = new FileReader();
+  reader.onload = e => loadImage(e.target.result);
+  reader.readAsDataURL(file);
 }
 
 function loadImage(src) {
