@@ -357,10 +357,47 @@ function stopCamera() {
 
 // ── Decode ──────────────────────────────────────────
 async function decodeCanvas(cvs, isCamera = false) {
-  if (!('BarcodeDetector' in window)) {
-    if (!isCamera) showResult(null, 'unsupported');
-    return;
+  let result = null;
+
+  // Method 1: BarcodeDetector (Brave, Chrome, Edge)
+  if ("BarcodeDetector" in window) {
+    try {
+      const detector = new BarcodeDetector({ formats: ["qr_code"] });
+      const codes = await detector.detect(cvs);
+      if (codes.length > 0) result = codes[0].rawValue;
+    } catch(e) {}
   }
+
+  // Method 2: jsQR fallback (Cromite, Firefox, dll)
+  if (!result && typeof jsQR !== "undefined") {
+    try {
+      const c = (cvs.tagName === "CANVAS") ? cvs : (() => {
+        const tmp = document.createElement("canvas");
+        tmp.width = cvs.naturalWidth || cvs.videoWidth;
+        tmp.height = cvs.naturalHeight || cvs.videoHeight;
+        tmp.getContext("2d").drawImage(cvs, 0, 0);
+        return tmp;
+      })();
+      const imgData = c.getContext("2d").getImageData(0, 0, c.width, c.height);
+      const code = jsQR(imgData.data, imgData.width, imgData.height, { inversionAttempts: "dontInvert" });
+      if (code) result = code.data;
+    } catch(e) {}
+  }
+
+  if (result) {
+    if (isCamera) {
+      const snap = cameraCanvas.toDataURL("image/jpeg", 0.85);
+      stopCamera();
+      previewImg.src = snap;
+      previewImg.classList.add("visible");
+      placeholder.style.display = "none";
+    }
+    showResult(result);
+  } else if (!isCamera) {
+    const supported = ("BarcodeDetector" in window) || (typeof jsQR !== "undefined");
+    showResult(null, supported ? "" : "unsupported");
+  }
+}
   try {
     const detector = new BarcodeDetector({ formats: ['qr_code'] });
     const codes = await detector.detect(cvs);
@@ -438,6 +475,7 @@ function showToast() {
 }
 </script>
 
+<script src="./jsqr.js"></script>
 <script>
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('sw.js');
