@@ -1,7 +1,7 @@
 {
   "name": "QR-Scanner",
   "short_name": "QR-Scanner",
-  "description": "Scan QR code dari gambar, full offline",
+  "description": "Scan QR!",
   "start_url": "https://just0wl.github.io/QR-Scanner/",
   "display": "standalone",
   "background_color": "#111111",
