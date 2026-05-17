@@ -4,6 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>QR Reader</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#111111">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="QR Reader">
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 
@@ -17,7 +23,6 @@
     align-items: center;
     justify-content: center;
     padding: 20px;
-    gap: 0;
     overflow: hidden;
   }
 
@@ -32,190 +37,139 @@
     flex-direction: column;
   }
 
-  /* Top bar */
+  /* Topbar */
   .topbar {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
+    display: flex; align-items: center; justify-content: space-between;
     padding: 16px 20px 14px;
     border-bottom: 1px solid #272727;
   }
-  .topbar h1 {
-    font-size: 17px;
-    font-weight: 600;
-    letter-spacing: -0.3px;
-  }
+  .topbar h1 { font-size: 17px; font-weight: 600; letter-spacing: -0.3px; }
   .badge {
-    font-size: 10px;
-    font-weight: 600;
-    color: #7cfc00;
-    background: rgba(124,252,0,0.12);
-    border: 1px solid rgba(124,252,0,0.3);
-    padding: 3px 8px;
-    border-radius: 20px;
-    letter-spacing: 0.5px;
+    font-size: 10px; font-weight: 600; color: #7cfc00;
+    background: rgba(124,252,0,0.12); border: 1px solid rgba(124,252,0,0.3);
+    padding: 3px 8px; border-radius: 20px; letter-spacing: 0.5px;
   }
 
-  /* Preview area */
+  /* Preview */
   .preview-area {
-    width: 100%;
-    aspect-ratio: 1 / 1;
-    background: #141414;
-    position: relative;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    width: 100%; aspect-ratio: 1/1; background: #141414;
+    position: relative; display: flex; align-items: center; justify-content: center;
     overflow: hidden;
   }
 
   .placeholder {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 10px;
-    pointer-events: none;
+    display: flex; flex-direction: column; align-items: center;
+    gap: 10px; pointer-events: none;
   }
-  .qr-icon {
-    width: 64px;
-    height: 64px;
-    opacity: 0.18;
-  }
-  .placeholder p {
-    font-size: 13px;
-    color: #555;
-    letter-spacing: 0.2px;
-  }
+  .placeholder svg { opacity: 0.18; }
+  .placeholder p { font-size: 13px; color: #555; }
 
-  #previewImg {
-    display: none;
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
-  }
+  #previewImg { display: none; width: 100%; height: 100%; object-fit: contain; }
   #previewImg.visible { display: block; }
 
-  /* Scan animation overlay */
-  .scan-overlay {
-    display: none;
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
+  #cameraView {
+    display: none; width: 100%; height: 100%;
+    object-fit: cover; position: absolute; inset: 0;
   }
-  .scan-overlay.active { display: block; }
-  .scan-line {
-    position: absolute;
-    left: 0; right: 0;
-    height: 2px;
-    background: linear-gradient(90deg, transparent, #7cfc00, transparent);
-    box-shadow: 0 0 10px #7cfc00;
-    animation: scan 1s ease-in-out infinite alternate;
-  }
-  @keyframes scan { from { top: 5%; } to { top: 95%; } }
+  #cameraView.visible { display: block; }
 
-  /* Corner brackets */
-  .corner { position: absolute; width: 28px; height: 28px; }
-  .corner.tl { top: 12px; left: 12px; border-top: 2px solid #7cfc00; border-left: 2px solid #7cfc00; border-radius: 4px 0 0 0; }
-  .corner.tr { top: 12px; right: 12px; border-top: 2px solid #7cfc00; border-right: 2px solid #7cfc00; border-radius: 0 4px 0 0; }
-  .corner.bl { bottom: 12px; left: 12px; border-bottom: 2px solid #7cfc00; border-left: 2px solid #7cfc00; border-radius: 0 0 0 4px; }
-  .corner.br { bottom: 12px; right: 12px; border-bottom: 2px solid #7cfc00; border-right: 2px solid #7cfc00; border-radius: 0 0 4px 0; }
+  /* ── Animasi: corner brackets pulse ── */
+  .scan-overlay { display: none; position: absolute; inset: 0; pointer-events: none; }
+  .scan-overlay.active { display: block; }
+
+  .corner {
+    position: absolute; width: 24px; height: 24px;
+    animation: blink 0.8s ease-in-out infinite alternate;
+  }
+  .corner.tl { top:14px; left:14px; border-top:3px solid #7cfc00; border-left:3px solid #7cfc00; border-radius:3px 0 0 0; animation-delay: 0s; }
+  .corner.tr { top:14px; right:14px; border-top:3px solid #7cfc00; border-right:3px solid #7cfc00; border-radius:0 3px 0 0; animation-delay: 0.2s; }
+  .corner.bl { bottom:14px; left:14px; border-bottom:3px solid #7cfc00; border-left:3px solid #7cfc00; border-radius:0 0 0 3px; animation-delay: 0.4s; }
+  .corner.br { bottom:14px; right:14px; border-bottom:3px solid #7cfc00; border-right:3px solid #7cfc00; border-radius:0 0 3px 0; animation-delay: 0.6s; }
+
+  @keyframes blink {
+    from { opacity: 0.25; filter: none; }
+    to   { opacity: 1; filter: drop-shadow(0 0 6px #7cfc00); }
+  }
+
+  /* Center dot pulse */
+  .center-dot {
+    position: absolute; top:50%; left:50%;
+    transform: translate(-50%, -50%);
+    width: 6px; height: 6px;
+    background: #7cfc00; border-radius: 50%;
+    animation: dotpulse 0.8s ease-out infinite;
+  }
+  @keyframes dotpulse {
+    0%   { box-shadow: 0 0 0 0 rgba(124,252,0,0.6); opacity:1; }
+    100% { box-shadow: 0 0 0 16px rgba(124,252,0,0); opacity:0.6; }
+  }
+
+  /* Stop camera button */
+  .btn-stop-camera {
+    position: absolute; bottom:12px; left:50%; transform:translateX(-50%);
+    background: rgba(0,0,0,0.6); color:#fff;
+    border: 1px solid #555; border-radius:20px;
+    padding: 7px 18px; font-size:12px; font-weight:600;
+    cursor:pointer; z-index:10; display:none;
+    backdrop-filter: blur(4px);
+  }
+  .btn-stop-camera.visible { display:block; }
 
   /* Result */
   .result-area {
-    padding: 14px 20px;
-    min-height: 68px;
-    display: flex;
-    align-items: center;
+    padding: 14px 20px; min-height: 68px;
+    display: flex; align-items: center;
     border-top: 1px solid #272727;
   }
-  .result-placeholder {
-    font-size: 13px;
-    color: #444;
-  }
+  .result-placeholder { font-size: 13px; color: #444; }
   .result-content { display: none; width: 100%; }
   .result-content.visible { display: flex; flex-direction: column; gap: 10px; }
 
   .result-url {
-    font-size: 13px;
-    color: #eee;
-    word-break: break-all;
-    line-height: 1.5;
-    max-height: 60px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    display: -webkit-box;
-    -webkit-line-clamp: 3;
-    -webkit-box-orient: vertical;
+    font-size: 13px; color: #eee; word-break: break-all;
+    line-height: 1.5; max-height: 60px; overflow: hidden;
+    display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical;
   }
   .result-url.error { color: #ff6b6b; }
+  .result-actions { display: flex; gap: 8px; }
 
-  .result-actions {
-    display: flex;
-    gap: 8px;
-  }
   .btn {
-    flex: 1;
-    padding: 10px;
-    border: none;
-    border-radius: 10px;
-    font-size: 13px;
-    font-weight: 600;
-    cursor: pointer;
+    flex: 1; padding: 10px; border: none; border-radius: 10px;
+    font-size: 13px; font-weight: 600; cursor: pointer;
     transition: opacity 0.15s, transform 0.1s;
-    letter-spacing: 0.2px;
   }
   .btn:active { transform: scale(0.96); opacity: 0.8; }
-  .btn-open {
-    background: #7cfc00;
-    color: #000;
-  }
-  .btn-copy {
-    background: #2a2a2a;
-    color: #eee;
-    border: 1px solid #333;
-  }
+  .btn-open { background: #7cfc00; color: #000; }
+  .btn-copy { background: #2a2a2a; color: #eee; border: 1px solid #333; }
 
-  /* Upload button */
+  /* Bottom buttons */
   .upload-wrap {
     padding: 14px 20px 18px;
     border-top: 1px solid #272727;
+    display: flex; gap: 10px;
   }
-  .btn-upload {
-    width: 100%;
-    padding: 13px;
-    background: #232323;
-    border: 1.5px dashed #333;
-    border-radius: 12px;
-    color: #bbb;
-    font-size: 14px;
-    font-weight: 500;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
+  .btn-upload, .btn-camera {
+    flex: 1; padding: 13px; background: #232323; border-radius: 12px;
+    font-size: 13px; font-weight: 500; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; gap: 7px;
     transition: border-color 0.2s, color 0.2s;
   }
+  .btn-upload { border: 1.5px dashed #333; color: #bbb; }
   .btn-upload:active { border-color: #7cfc00; color: #7cfc00; }
+  .btn-camera { border: 1.5px solid #333; color: #bbb; }
+  .btn-camera:active, .btn-camera.active { border-color: #ff4d6d; color: #ff4d6d; }
 
   #fileInput { display: none; }
   canvas { display: none; }
 
-  /* Toast */
   .toast {
-    position: fixed;
-    bottom: 24px;
-    left: 50%;
+    position: fixed; bottom: 24px; left: 50%;
     transform: translateX(-50%) translateY(80px);
-    background: #7cfc00;
-    color: #000;
-    font-size: 13px;
-    font-weight: 700;
-    padding: 10px 22px;
-    border-radius: 30px;
-    letter-spacing: 0.3px;
+    background: #7cfc00; color: #000;
+    font-size: 13px; font-weight: 700;
+    padding: 10px 22px; border-radius: 30px;
     transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1);
-    pointer-events: none;
-    z-index: 99;
+    pointer-events: none; z-index: 99;
   }
   .toast.show { transform: translateX(-50%) translateY(0); }
 </style>
@@ -230,29 +184,29 @@
 
   <div class="preview-area">
     <div class="placeholder" id="placeholder">
-      <!-- QR SVG icon -->
-      <svg class="qr-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-        <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
+      <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <rect x="3" y="3" width="7" height="7" rx="1"/>
+        <rect x="14" y="3" width="7" height="7" rx="1"/>
         <rect x="3" y="14" width="7" height="7" rx="1"/>
         <rect x="5" y="5" width="3" height="3" fill="currentColor" stroke="none"/>
         <rect x="16" y="5" width="3" height="3" fill="currentColor" stroke="none"/>
         <rect x="5" y="16" width="3" height="3" fill="currentColor" stroke="none"/>
-        <line x1="14" y1="14" x2="14" y2="14.01" stroke-width="2.5" stroke-linecap="round"/>
-        <line x1="18" y1="14" x2="21" y2="14"/>
-        <line x1="14" y1="18" x2="14" y2="21"/>
-        <line x1="18" y1="18" x2="21" y2="21"/>
-        <line x1="21" y1="18" x2="18" y2="21"/>
       </svg>
-      <p>Belum ada gambar</p>
+      <p>Pilih gambar atau pakai kamera</p>
     </div>
-    <img id="previewImg" alt="QR preview">
+
+    <img id="previewImg" alt="QR">
+    <video id="cameraView" playsinline autoplay muted></video>
+
     <div class="scan-overlay" id="scanOverlay">
-      <div class="scan-line"></div>
       <div class="corner tl"></div>
       <div class="corner tr"></div>
       <div class="corner bl"></div>
       <div class="corner br"></div>
+      <div class="center-dot"></div>
     </div>
+
+    <button class="btn-stop-camera" id="btnStopCamera" onclick="stopCamera()">✕ Tutup Kamera</button>
   </div>
 
   <div class="result-area">
@@ -265,95 +219,153 @@
 
   <div class="upload-wrap">
     <label class="btn-upload" for="fileInput">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
         <polyline points="17 8 12 3 7 8"/>
         <line x1="12" y1="3" x2="12" y2="15"/>
       </svg>
-      Pilih Gambar QR
+      Gambar
     </label>
     <input type="file" id="fileInput" accept="image/*">
+
+    <button class="btn-camera" id="btnCamera" onclick="toggleCamera()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+        <circle cx="12" cy="13" r="4"/>
+      </svg>
+      Kamera
+    </button>
   </div>
 </div>
 
 <div class="toast" id="toast">Link disalin!</div>
 <canvas id="canvas"></canvas>
+<canvas id="cameraCanvas"></canvas>
 
 <script>
-// ─── State ───────────────────────────────────────────
-const fileInput     = document.getElementById('fileInput');
-const previewImg    = document.getElementById('previewImg');
-const placeholder   = document.getElementById('placeholder');
-const scanOverlay   = document.getElementById('scanOverlay');
-const resultContent = document.getElementById('resultContent');
+const fileInput         = document.getElementById('fileInput');
+const previewImg        = document.getElementById('previewImg');
+const placeholder       = document.getElementById('placeholder');
+const scanOverlay       = document.getElementById('scanOverlay');
+const resultContent     = document.getElementById('resultContent');
 const resultPlaceholder = document.getElementById('resultPlaceholder');
-const resultUrl     = document.getElementById('resultUrl');
-const resultActions = document.getElementById('resultActions');
-const canvas        = document.getElementById('canvas');
-const ctx           = canvas.getContext('2d');
-const toast         = document.getElementById('toast');
+const resultUrl         = document.getElementById('resultUrl');
+const resultActions     = document.getElementById('resultActions');
+const canvas            = document.getElementById('canvas');
+const ctx               = canvas.getContext('2d');
+const toast             = document.getElementById('toast');
+const cameraView        = document.getElementById('cameraView');
+const cameraCanvas      = document.getElementById('cameraCanvas');
+const cameraCtx         = cameraCanvas.getContext('2d');
+const btnCamera         = document.getElementById('btnCamera');
+const btnStopCamera     = document.getElementById('btnStopCamera');
 
-// ─── File pick ───────────────────────────────────────
+let cameraStream  = null;
+let cameraTimer   = null;
+let cameraRunning = false;
+
+// ── File input ──────────────────────────────────────
 fileInput.addEventListener('change', () => {
   if (fileInput.files[0]) readFile(fileInput.files[0]);
 });
 
 function readFile(file) {
+  stopCamera();
   const reader = new FileReader();
   reader.onload = e => loadImage(e.target.result);
   reader.readAsDataURL(file);
 }
 
 function loadImage(src) {
-  // Reset UI
-  resultContent.classList.remove('visible');
-  resultPlaceholder.style.display = 'block';
-  resultPlaceholder.textContent = 'Sedang scan...';
-  scanOverlay.classList.add('active');
+  resetResult('Sedang scan...');
   placeholder.style.display = 'none';
   previewImg.classList.add('visible');
   previewImg.src = src;
+  scanOverlay.classList.add('active');
 
   const img = new Image();
   img.onload = () => {
     canvas.width  = img.width;
     canvas.height = img.height;
     ctx.drawImage(img, 0, 0);
-    decodeQR(img);
+    // 100ms — cukup untuk render, langsung decode
+    setTimeout(() => {
+      scanOverlay.classList.remove('active');
+      decodeCanvas(canvas);
+    }, 100);
   };
   img.src = src;
 }
 
-// ─── Decode — BarcodeDetector (built-in modern browser) ──
-async function decodeQR(imgEl) {
-  let result = null;
-
-  // Method 1: BarcodeDetector API (Chrome 83+, Edge 83+, Safari 17.4+, Android WebView)
-  if ('BarcodeDetector' in window) {
-    try {
-      const detector = new BarcodeDetector({ formats: ['qr_code'] });
-      const codes = await detector.detect(imgEl);
-      if (codes.length > 0) result = codes[0].rawValue;
-    } catch (e) { /* fallthrough */ }
+// ── Kamera ──────────────────────────────────────────
+async function toggleCamera() {
+  if (cameraRunning) { stopCamera(); return; }
+  try {
+    cameraStream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: 'environment' }
+    });
+    cameraView.srcObject = cameraStream;
+    cameraView.classList.add('visible');
+    previewImg.classList.remove('visible');
+    placeholder.style.display = 'none';
+    scanOverlay.classList.add('active');
+    btnStopCamera.classList.add('visible');
+    btnCamera.classList.add('active');
+    cameraRunning = true;
+    resetResult('Arahkan kamera ke QR code...');
+    cameraView.onloadedmetadata = () => { cameraView.play(); loopCamera(); };
+  } catch(e) {
+    showResult(null, 'camera_denied');
   }
-
-  // Method 2: fallback — try BarcodeDetector without format filter (wider compat)
-  if (!result && 'BarcodeDetector' in window) {
-    try {
-      const detector = new BarcodeDetector();
-      const codes = await detector.detect(imgEl);
-      if (codes.length > 0) result = codes[0].rawValue;
-    } catch (e) { /* fallthrough */ }
-  }
-
-  setTimeout(() => {
-    scanOverlay.classList.remove('active');
-    showResult(result);
-  }, 700);
 }
 
-// ─── Show result ─────────────────────────────────────
-function showResult(text) {
+function loopCamera() {
+  if (!cameraRunning) return;
+  if (cameraView.readyState === cameraView.HAVE_ENOUGH_DATA) {
+    cameraCanvas.width  = cameraView.videoWidth;
+    cameraCanvas.height = cameraView.videoHeight;
+    cameraCtx.drawImage(cameraView, 0, 0);
+    decodeCanvas(cameraCanvas, true);
+  }
+  cameraTimer = setTimeout(loopCamera, 300);
+}
+
+function stopCamera() {
+  if (cameraStream) { cameraStream.getTracks().forEach(t => t.stop()); cameraStream = null; }
+  clearTimeout(cameraTimer);
+  cameraRunning = false;
+  cameraView.classList.remove('visible');
+  cameraView.srcObject = null;
+  scanOverlay.classList.remove('active');
+  btnStopCamera.classList.remove('visible');
+  btnCamera.classList.remove('active');
+  if (!previewImg.src || previewImg.src === window.location.href) {
+    placeholder.style.display = 'flex';
+  }
+}
+
+// ── Decode ──────────────────────────────────────────
+async function decodeCanvas(cvs, isCamera = false) {
+  if (!('BarcodeDetector' in window)) {
+    if (!isCamera) showResult(null, 'unsupported');
+    return;
+  }
+  try {
+    const detector = new BarcodeDetector({ formats: ['qr_code'] });
+    const codes = await detector.detect(cvs);
+    if (codes.length > 0) {
+      if (isCamera) stopCamera();
+      showResult(codes[0].rawValue);
+    } else if (!isCamera) {
+      showResult(null);
+    }
+  } catch(e) {
+    if (!isCamera) showResult(null);
+  }
+}
+
+// ── Result ──────────────────────────────────────────
+function showResult(text, mode) {
   resultPlaceholder.style.display = 'none';
   resultActions.innerHTML = '';
 
@@ -362,9 +374,7 @@ function showResult(text) {
     resultUrl.className = 'result-url';
     resultContent.classList.add('visible');
 
-    const isURL = /^https?:\/\//i.test(text.trim());
-
-    if (isURL) {
+    if (/^https?:\/\//i.test(text.trim())) {
       const btnOpen = document.createElement('button');
       btnOpen.className = 'btn btn-open';
       btnOpen.textContent = 'Buka Link';
@@ -376,35 +386,44 @@ function showResult(text) {
     btnCopy.className = 'btn btn-copy';
     btnCopy.textContent = 'Salin';
     btnCopy.onclick = () => {
-      navigator.clipboard.writeText(text).then(showToast).catch(() => {
-        // Fallback for older browsers
-        const ta = document.createElement('textarea');
-        ta.value = text;
-        document.body.appendChild(ta);
-        ta.select();
-        document.execCommand('copy');
-        document.body.removeChild(ta);
-        showToast();
-      });
+      navigator.clipboard
+        ? navigator.clipboard.writeText(text).then(showToast).catch(() => fallbackCopy(text))
+        : fallbackCopy(text);
     };
     resultActions.appendChild(btnCopy);
 
   } else {
-    // BarcodeDetector not supported or not found
-    const supported = 'BarcodeDetector' in window;
     resultUrl.className = 'result-url error';
-    resultUrl.textContent = supported
-      ? 'QR code tidak ditemukan. Coba gambar yang lebih jelas.'
-      : 'Browser ini belum mendukung scan offline.\nCoba Chrome atau Edge terbaru.';
+    resultUrl.textContent =
+      mode === 'unsupported'   ? 'Browser belum mendukung.\nCoba Brave atau Chrome terbaru.' :
+      mode === 'camera_denied' ? 'Izin kamera ditolak atau tidak tersedia.' :
+                                 'QR code tidak ditemukan. Coba gambar yang lebih jelas.';
     resultContent.classList.add('visible');
-    resultPlaceholder.style.display = 'none';
   }
 }
 
-// ─── Toast ───────────────────────────────────────────
+function resetResult(msg = 'Hasil scan muncul di sini') {
+  resultContent.classList.remove('visible');
+  resultPlaceholder.style.display = 'block';
+  resultPlaceholder.textContent = msg;
+}
+
+function fallbackCopy(text) {
+  const ta = document.createElement('textarea');
+  ta.value = text; document.body.appendChild(ta);
+  ta.select(); document.execCommand('copy');
+  document.body.removeChild(ta); showToast();
+}
+
 function showToast() {
   toast.classList.add('show');
   setTimeout(() => toast.classList.remove('show'), 1800);
+}
+</script>
+
+<script>
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js');
 }
 </script>
 </body>
