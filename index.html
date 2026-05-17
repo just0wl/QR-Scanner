@@ -70,8 +70,11 @@
   #cameraView {
     display: none; width: 100%; height: 100%;
     object-fit: cover; position: absolute; inset: 0;
+    background: #000; z-index: 1;
   }
   #cameraView.visible { display: block; }
+  .scan-overlay { z-index: 2; }
+  .btn-stop-camera { z-index: 3; }
 
   /* ── Animasi: corner brackets pulse ── */
   .scan-overlay { display: none; position: absolute; inset: 0; pointer-events: none; }
@@ -302,9 +305,10 @@ async function toggleCamera() {
   if (cameraRunning) { stopCamera(); return; }
   try {
     cameraStream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: 'environment' }
+      video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 1280 } }
     });
     cameraView.srcObject = cameraStream;
+    await cameraView.play();
     cameraView.classList.add('visible');
     previewImg.classList.remove('visible');
     placeholder.style.display = 'none';
@@ -313,7 +317,7 @@ async function toggleCamera() {
     btnCamera.classList.add('active');
     cameraRunning = true;
     resetResult('Arahkan kamera ke QR code...');
-    cameraView.onloadedmetadata = () => { cameraView.play(); loopCamera(); };
+    loopCamera();
   } catch(e) {
     showResult(null, 'camera_denied');
   }
@@ -354,7 +358,13 @@ async function decodeCanvas(cvs, isCamera = false) {
     const detector = new BarcodeDetector({ formats: ['qr_code'] });
     const codes = await detector.detect(cvs);
     if (codes.length > 0) {
-      if (isCamera) stopCamera();
+      if (isCamera) {
+        const snap = cameraCanvas.toDataURL('image/jpeg', 0.85);
+        stopCamera();
+        previewImg.src = snap;
+        previewImg.classList.add('visible');
+        placeholder.style.display = 'none';
+      }
       showResult(codes[0].rawValue);
     } else if (!isCamera) {
       showResult(null);
