@@ -1,4 +1,4 @@
-const CACHE = 'qr-reader-v1';
+const CACHE = 'qr-reader-v2';
 const FILES = [
   '/',
   '/index.html',
