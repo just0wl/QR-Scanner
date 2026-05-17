@@ -1,4 +1,4 @@
-qr-core-scanner
+qrcode-scanner
 
 
 vibe coding by claude sonnet 4.6.
