@@ -1,4 +1,4 @@
-qrcode-scanner
+qrcode-scanner/reader
 
 
 vibe coding by claude sonnet 4.6.
